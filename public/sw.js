@@ -1,4 +1,4 @@
-const CACHE = "rescue-plan-v1";
+const CACHE = "dfd-rescue-plan-v1";
 const ASSETS = ["/", "/index.html", "/style.css", "/app.js", "/manifest.webmanifest"];
 
 self.addEventListener("install", (e) => {
@@ -6,17 +6,12 @@ self.addEventListener("install", (e) => {
 });
 
 self.addEventListener("fetch", (e) => {
-  const req = e.request;
-  const url = new URL(req.url);
+  const url = new URL(e.request.url);
 
-  // Don’t cache API calls
+  // never cache API calls
   if (url.pathname.startsWith("/api/")) return;
 
   e.respondWith(
-    caches.match(req).then((cached) => cached || fetch(req).then((resp) => {
-      const copy = resp.clone();
-      caches.open(CACHE).then((c) => c.put(req, copy)).catch(()=>{});
-      return resp;
-    }).catch(() => cached))
+    caches.match(e.request).then((cached) => cached || fetch(e.request))
   );
 });
