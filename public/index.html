@@ -1,0 +1,120 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>On-Site Rescue Procedures</title>
+
+  <link rel="manifest" href="/manifest.webmanifest">
+  <meta name="theme-color" content="#c41212" />
+  <link rel="icon" href="/icon-192.png" />
+
+  <link rel="stylesheet" href="/style.css" />
+</head>
+<body>
+  <header class="topbar">
+    <div class="brand">
+      <span class="badge"></span>
+      <div>
+        <div class="title">On-Site Rescue Plan</div>
+        <div class="sub">Confined Space</div>
+      </div>
+    </div>
+  </header>
+
+  <main class="container">
+    <form id="rescueForm" class="card">
+      <h1>On-Site Rescue Procedures</h1>
+
+      <section class="section">
+        <h2>Space Details</h2>
+
+        <label>
+          Description of Space (include location of attendant)
+          <textarea name="spaceDescription" required rows="4"></textarea>
+        </label>
+
+        <label>
+          Diagram of Space (optional photo)
+          <input type="file" name="diagram" accept="image/*" />
+        </label>
+      </section>
+
+      <section class="section">
+        <h2>Prior to entry / work</h2>
+        <label class="check">
+          <input type="checkbox" name="prior_1" required />
+          Entry supervisor ensured rescue plan completed & equipment available.
+        </label>
+        <label class="check">
+          <input type="checkbox" name="prior_2" required />
+          Adequate trained persons available for immediate rescue implementation.
+        </label>
+        <label class="check">
+          <input type="checkbox" name="prior_3" required />
+          Emergency procedures reviewed with entrants & related personnel.
+        </label>
+        <label class="check">
+          <input type="checkbox" name="prior_4" required />
+          Attendant established communication with all workers.
+        </label>
+      </section>
+
+      <section class="section">
+        <h2>On entry / while working</h2>
+        <label class="check">
+          <input type="checkbox" name="entry_1" required />
+          Attendant remains in constant communication with all workers inside.
+        </label>
+        <label class="check">
+          <input type="checkbox" name="entry_2" required />
+          Attendant notified immediately if entrant recognizes unusual action/hazard/unsafe act.
+        </label>
+        <label class="check">
+          <input type="checkbox" name="entry_3" required />
+          Entrants exit ASAP when ordered / symptoms / unacceptable condition / alarm.
+        </label>
+      </section>
+
+      <section class="section">
+        <h2>In the event of a rescue</h2>
+        <label class="check">
+          <input type="checkbox" name="rescue_1" required />
+          Attendant does not enter; summons rescue response using defined communication.
+        </label>
+      </section>
+
+      <section class="section">
+        <h2>Completion</h2>
+
+        <label>
+          Date
+          <input type="date" name="date" required />
+        </label>
+
+        <label>
+          Completed by
+          <input type="text" name="completedBy" required />
+        </label>
+
+        <label>
+          Email to send completed PDF to
+          <input type="email" name="emailTo" required />
+        </label>
+
+        <label>
+          Additional comments
+          <textarea name="comments" rows="3"></textarea>
+        </label>
+      </section>
+
+      <div class="actions">
+        <button type="submit" id="submitBtn">Submit & Email PDF</button>
+        <div class="status" id="status"></div>
+      </div>
+    </form>
+  </main>
+
+  <script src="/app.js"></script>
+</body>
+</html>
