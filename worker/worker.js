@@ -1,47 +1,145 @@
+// worker/worker.js
+
+const GAS_URL =
+  "https://script.google.com/macros/s/AKfycbxc-SIWYvEqWg8KRu6MIvbmyCTIyuXbl7ran4KDILVmrbNr6eHPzQNf0h7iwKSfXcdX/exec";
+
+function toBase64(uint8) {
+  let binary = "";
+  const chunk = 0x8000;
+  for (let i = 0; i < uint8.length; i += chunk) {
+    binary += String.fromCharCode(...uint8.subarray(i, i + chunk));
+  }
+  return btoa(binary);
+}
+
 export default {
-  async fetch(request, env, ctx) {
+  async fetch(request) {
     const url = new URL(request.url);
 
+    if (request.method === "OPTIONS") {
+      return new Response(null, { status: 204, headers: corsHeaders() });
+    }
+
     if (url.pathname === "/api/submit" && request.method === "POST") {
-      const form = await request.formData();
+      try {
+        const form = await request.formData();
 
-      // Basic fields
-      const payload = {
-        spaceDescription: form.get("spaceDescription") || "",
-        date: form.get("date") || "",
-        completedBy: form.get("completedBy") || "",
-        emailTo: form.get("emailTo") || "",
-        comments: form.get("comments") || "",
-        checks: {
-          prior_1: !!form.get("prior_1"),
-          prior_2: !!form.get("prior_2"),
-          prior_3: !!form.get("prior_3"),
-          prior_4: !!form.get("prior_4"),
-          entry_1: !!form.get("entry_1"),
-          entry_2: !!form.get("entry_2"),
-          entry_3: !!form.get("entry_3"),
-          rescue_1: !!form.get("rescue_1")
+        const payload = {
+          csName: (form.get("csName") || "").toString(),
+          csId: (form.get("csId") || "").toString(),
+          date: (form.get("date") || "").toString(),
+          attendant: (form.get("attendant") || "").toString(),
+
+          rescuePerson1: (form.get("rescuePerson1") || "").toString(),
+          rescuePerson2: (form.get("rescuePerson2") || "").toString(),
+          rescuePerson3: (form.get("rescuePerson3") || "").toString(),
+          rescuePerson4: (form.get("rescuePerson4") || "").toString(),
+
+          spaceDescription: (form.get("spaceDescription") || "").toString(),
+          comments: (form.get("comments") || "").toString(),
+
+          completedBy: (form.get("completedBy") || "").toString(),
+          emailTo: (form.get("emailTo") || "").toString(),
+
+          comm_attendant_to_rescue: (form.get("commAR") || "").toString(),
+          comm_attendant_to_workers: form.getAll("commAW").map(v => v.toString()),
+
+          rescue_method: (form.get("rescueMethod") || "").toString(),
+          rescue_internal_desc: (form.get("rescueInternalDesc") || "").toString(),
+          rescue_congested_desc: (form.get("rescueCongestedDesc") || "").toString(),
+
+          hauling_required: form.get("haulingRequired") === "on",
+          hauling_desc: (form.get("haulingDesc") || "").toString(),
+
+          lowering_required: form.get("loweringRequired") === "on",
+          lowering_desc: (form.get("loweringDesc") || "").toString(),
+
+          anchor_overhead: form.getAll("anchorOverhead").map(v => v.toString()),
+          anchor_tripod_desc: (form.get("anchorTripodDesc") || "").toString(),
+
+          prerig_required: (form.get("preRig") || "").toString().toLowerCase() === "yes",
+
+          equipment: normalizeEquipment({
+            hauling_systems: { on: form.get("eq_hauling_systems") === "on", qty: form.get("eq_hauling_systems_qty") || "" },
+            carabiners: { on: form.get("eq_carabiners") === "on", qty: form.get("eq_carabiners_qty") || "" },
+            pulleys: { on: form.get("eq_pulleys") === "on", qty: form.get("eq_pulleys_qty") || "" },
+            shock: { on: form.get("eq_shock") === "on", qty: form.get("eq_shock_qty") || "" },
+            anchor_straps: { on: form.get("eq_anchor_straps") === "on", qty: form.get("eq_anchor_straps_qty") || "" },
+            webbing: { on: form.get("eq_webbing") === "on", qty: form.get("eq_webbing_qty") || "" },
+            ascenders: { on: form.get("eq_ascenders") === "on", qty: form.get("eq_ascenders_qty") || "" },
+            body_harnesses: { on: form.get("eq_body_harnesses") === "on", qty: form.get("eq_body_harnesses_qty") || "" },
+            rigging_plates: { on: form.get("eq_rigging_plates") === "on", qty: form.get("eq_rigging_plates_qty") || "" },
+            safety_lines: { on: form.get("eq_safety_lines") === "on", qty: form.get("eq_safety_lines_qty") || "" },
+            main_lines: { on: form.get("eq_main_lines") === "on", qty: form.get("eq_main_lines_qty") || "" },
+            wrist_ankle: { on: form.get("eq_wrist_ankle") === "on", qty: form.get("eq_wrist_ankle_qty") || "" },
+            fire_ext: { on: form.get("eq_fire_ext") === "on", qty: form.get("eq_fire_ext_qty") || "" },
+            other: (form.get("eq_other") || "").toString()
+          }),
+
+          medical: {
+            first_aid: form.get("med_first_aid") === "on",
+            packaging: form.get("med_packaging") === "on",
+            packaging_desc: (form.get("med_packaging_desc") || "").toString(),
+            other: form.get("med_other") === "on",
+            other_desc: (form.get("med_other_desc") || "").toString()
+          },
+
+          ppe: form.getAll("ppe").map(v => v.toString()),
+          ppe_other_desc: (form.get("ppe_other_desc") || "").toString()
+        };
+
+        // Optional diagram
+        const diagram = form.get("diagram");
+        if (diagram && typeof diagram === "object" && diagram.size > 0) {
+          const bytes = new Uint8Array(await diagram.arrayBuffer());
+          payload.diagramBase64 = toBase64(bytes);
         }
-      };
 
-      // Optional diagram file
-      const diagramFile = form.get("diagram");
-      const hasDiagram = diagramFile && typeof diagramFile === "object" && diagramFile.size > 0;
+        // Forward directly to Apps Script
+        const res = await fetch(GAS_URL, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify(payload)
+        });
 
-      return json({
-        ok: true,
-        received: payload,
-        hasDiagram
-      });
+        const data = await res.json().catch(() => ({}));
+
+        return new Response(JSON.stringify(data), {
+          status: res.status,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            ...corsHeaders()
+          }
+        });
+      } catch (err) {
+        return new Response(JSON.stringify({ ok: false, error: String(err?.message || err) }), {
+          status: 500,
+          headers: {
+            "content-type": "application/json; charset=utf-8",
+            ...corsHeaders()
+          }
+        });
+      }
     }
 
     return new Response("Not found", { status: 404 });
   }
 };
 
-function json(obj, status = 200) {
-  return new Response(JSON.stringify(obj), {
-    status,
-    headers: { "content-type": "application/json; charset=utf-8" }
-  });
+function corsHeaders() {
+  return {
+    "access-control-allow-origin": "*",
+    "access-control-allow-methods": "GET,POST,OPTIONS",
+    "access-control-allow-headers": "Content-Type"
+  };
+}
+
+function normalizeEquipment(eq) {
+  const out = {};
+  for (const [k, v] of Object.entries(eq || {})) {
+    if (k === "other") { out.other = v; continue; }
+    if (v && v.on) out[k] = { qty: v.qty ?? "" };
+  }
+  if (eq?.other) out.other = eq.other;
+  return out;
 }
