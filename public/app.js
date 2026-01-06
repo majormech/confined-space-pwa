@@ -1,17 +1,15 @@
-const $ = (id) => document.getElementById(id);
+const form = document.getElementById("rescueForm");
+const statusEl = document.getElementById("status");
+const submitBtn = document.getElementById("submitBtn");
 
 if ("serviceWorker" in navigator) {
-  navigator.serviceWorker.register("/sw.js").catch(()=>{});
+  navigator.serviceWorker.register("/sw.js").catch(() => {});
 }
-
-const form = $("rescueForm");
-const statusEl = $("status");
-const btn = $("submitBtn");
 
 form.addEventListener("submit", async (e) => {
   e.preventDefault();
   statusEl.textContent = "";
-  btn.disabled = true;
+  submitBtn.disabled = true;
 
   try {
     const fd = new FormData(form);
@@ -23,15 +21,15 @@ form.addEventListener("submit", async (e) => {
 
     const data = await res.json().catch(() => ({}));
 
-    if (!res.ok) {
-      throw new Error(data?.error || `Submit failed (${res.status})`);
+    if (!res.ok || !data.ok) {
+      throw new Error(data.error || `Submit failed (${res.status})`);
     }
 
-    statusEl.textContent = "Submitted. Check your email in a minute.";
+    statusEl.textContent = "Submitted. PDF will be emailed shortly.";
     form.reset();
   } catch (err) {
     statusEl.textContent = err.message || "Error submitting form.";
   } finally {
-    btn.disabled = false;
+    submitBtn.disabled = false;
   }
 });
